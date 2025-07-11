@@ -93,8 +93,7 @@ def main():
     supabase_url = os.getenv("SUPABASE_URL")
     db_password = os.getenv("DB_PASSWORD")
 
-    # Backup file name
-    backup_file = "backup.sql"
+    
 
     # Determine the command based on the OS
     pg_dump_command = "pg_dump.exe" if platform.system() == "Windows" else "pg_dump"
@@ -168,16 +167,16 @@ def main():
         ]
         env["PGPASSWORD"] = db_password
 
-    print(f"Starting database backup to {backup_file}...")
-
     try:
-        # Execute the pg_dump command
+        # Execute the pg_dump command with a 60-second timeout.
+        print(f"Starting database backup to {backup_file}...")
         subprocess.run(
             command,
             check=True,
             capture_output=True,
             text=True,
-            env=env
+            env=env,
+            timeout=1200
         )
         print("Backup completed successfully.")
         print(f"Backup file created at: {os.path.abspath(backup_file)}")
@@ -186,10 +185,21 @@ def main():
         print(f"Error: {pg_dump_command} command not found.")
         print("Please make sure PostgreSQL client tools are installed and in your system's PATH.")
         exit(1)
+    except subprocess.TimeoutExpired:
+        print("\nError: The backup process timed out after 20 minutes.")
+        print("This could be due to several reasons:")
+        print("1. A firewall is blocking the connection to the database.")
+        print("2. The database credentials in your .env file may be incorrect.")
+        print("3. The Supabase project may be paused or unavailable.")
+        print("4. The Supabase project is huge, try extending the timeout above.")
+        print("Please check your connection and credentials and try again. If everything is correct, then it's likely due to the size of your DB. Therefore, up the timeout to 1 hour +")
+        exit(1)
     except subprocess.CalledProcessError as e:
         print("Error during backup:")
         print(e.stderr)
         exit(1)
+
+    print("Script finished.")
 
 if __name__ == "__main__":
     main()

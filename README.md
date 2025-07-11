@@ -2,6 +2,8 @@
 
 A simple and interactive command-line tool to back up your Supabase PostgreSQL databases.
 
+![Demo](assets/readme_demo.png)
+
 ## Overview
 
 This tool provides a user-friendly interface to create backups of your Supabase projects. It's designed to be easy to use, especially when managing multiple projects, by allowing you to select the appropriate project configuration from `.env` files.
