@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Poetry
+poetry.lock
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+
+# DuckDB and data files
+*.duckdb
+*.db
+
+# Backup files
+backups/
+*.sql
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# GitHub Actions
+.github/workflows/*.secrets.enc
