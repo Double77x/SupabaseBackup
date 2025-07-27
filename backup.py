@@ -2,6 +2,7 @@
 import os
 import platform
 import subprocess
+import socket
 import inquirer
 from datetime import datetime
 from dotenv import load_dotenv
@@ -138,7 +139,6 @@ def main():
 
         # Check DNS resolution
         try:
-            import socket
             ip_address = socket.gethostbyname(db_host)
             print(f"Successfully resolved {db_host} to {ip_address}")
         except socket.gaierror:
