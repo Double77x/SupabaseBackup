@@ -1,0 +1,44 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*" # Trigger on tags like v1.0, v1.0.1
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. Install uv (The magic speed tool)
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "requirements.txt"
+
+      # 2. Install Python 3.11 via uv
+      - name: Set up Python
+        run: uv python install 3.13.5
+
+      # 3. Install Requirements
+      # We use --system to install directly into the environment so 'python' works globally
+      - name: Install Dependencies
+        run: uv pip install --system -r requirements.txt
+
+      # 4. Run your build script
+      - name: Build and Zip
+        run: python build_release.py
+
+      # 5. Upload to GitHub Releases
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: SupabaseBackupTool.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

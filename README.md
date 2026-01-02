@@ -1,188 +1,188 @@
 # Supabase Backup CLI
 
-A simple and interactive command-line tool to back up your Supabase PostgreSQL databases.
+This tool provides a secure, automated way to backup your Supabase PostgreSQL databases. It now offers two modes of operation:
 
-V2: This tool now goes beyond simple database dumps. It splits your backup into granular components (Roles, Schema, Data), encrypts them with AES-256, manages retention policies automatically, and supports headless execution for CI/CD pipelines.
+1. **Supabase Manager (GUI):** A user-friendly desktop application to manage environments, retention policies, and trigger backups manually.
+2. **Backup Engine (CLI):** A headless executable designed for Cron jobs, GitHub Actions, and automated scheduling.
+
+**CLI**
 
 ![Demo](assets/readme_demo.png)
+
+**PORTABLE GUI**
 
 ## Overview
 
 ## 🚀 Features
 
-- **Modular Architecture** : Splits backups into `roles.sql`, `schema.sql`, and `data.sql` for granular debugging and partial restoration.
+- **🆕 Modern GUI Dashboard** : Manage multiple projects, create configs, and view execution logs in a beautiful Catppuccin-themed interface.
+- **🆕 Portable Application** : Runs as a standalone Windows executable (`.exe`) without needing Python installed.
+- **🆕 Integrated Config Manager** : Create and edit connection details directly inside the app—no more manual file editing.
+- **Modular Architecture** : Splits backups into `roles.sql`, `schema.sql`, and `data.sql` for granular restoration.
 - **AES-256 Encryption** : Automatically compresses and encrypts backups into protected `.zip` archives.
-- **Multi-Project Support** : Seamlessly switch between Production, Staging, and Dev environments using config files.
-- **Automated Retention** : Built-in policy engine to clean up old backups while preserving "Permanent" tagged snapshots.
-- **Headless Mode** : Full CLI argument support for running in Cron jobs or GitHub Actions.
-- **Smart Naming** : Automatically detects project names from config files (e.g., `.production.env` -> `production_backup_...`).
+- **Automated Retention** : Built-in policy engine cleans up old backups based on your settings (e.g., "Keep last 5 files").
+- **Permanent Snapshots** : Tag specific backups as "Permanent" to protect them from auto-deletion forever.
+- **Headless Mode** : Full CLI argument support for automation.
 
 ---
 
-## 🛠 Prerequisites
+## ⚠️ Critical Prerequisite: PostgreSQL Binaries
 
-- **Python 3.9+** installed.
-- **PostgreSQL Client Tools** (`pg_dump` and `pg_dumpall`) must be in your system PATH.
-  - _Windows_ : Install [PostgreSQL](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) (Command Line Tools only).
-  - _macOS_ : `brew install libpq && brew link --force libpq`
-  - _Linux_ : `sudo apt-get install postgresql-client`
+Whether you use the GUI or the CLI, **this tool requires PostgreSQL Client Tools to be available.**
+
+The tool uses `pg_dump` and `pg_dumpall` to perform the actual extraction. You have two options:
+
+### Option A: Install Globally (Recommended)
+
+Install PostgreSQL on your machine. The tool will automatically find `pg_dump` in your system PATH.
+
+- **Windows** : Download and install [PostgreSQL Command Line Tools](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads).
+- **macOS** : `brew install libpq && brew link --force libpq`
+- **Linux** : `sudo apt-get install postgresql-client`
+
+### Option B: Portable Mode
+
+If you cannot install PostgreSQL globally, you can download the binaries zip, extract `pg_dump.exe` (and its DLL dependencies), and place them **inside the same folder** as `SupabaseManager.exe`.
 
 ---
 
-## ⚙️ Installation & Setup
+## 📥 Installation
 
-1. **Clone the repository**
+### Method 1: Portable App (Recommended for Users)
+
+1. Download the latest **Release ZIP** (`SupabaseBackupTool.zip`) from GitHub.
+2. Extract the folder to a location of your choice (e.g., Desktop or Documents).
+3. Ensure `pg_dump` is installed (see Prerequisites above).
+4. Double-click **`SupabaseManager.exe`** to launch the dashboard.
+
+### Method 2: Running from Source (Developers)
+
+1. **Clone the repository** :
    **Bash**
 
-   ```
+```
    git clone https://github.com/your-username/supabase-backup-tool.git
    cd supabase-backup-tool
-   ```
+```
 
-2. **Install Python Dependencies**
-   The script will verify and install dependencies on the first run, or you can do it manually:
+1. **Install Dependencies** (Using `uv` is recommended for speed):
    **Bash**
 
    ```
-   pip install -r requirements.txt
-   # OR using uv (recommended)
    pip install uv
    uv pip install -r requirements.txt
    ```
 
-3. **Create the `envs` Directory**
-   This folder keeps your configuration files organized and ignored by Git.
+2. **Run the GUI** :
    **Bash**
 
-   ```
-   mkdir envs
-   ```
+```
+   python gui.py
+```
 
 ---
 
-## 🔐 Configuration
+## 🖥️ Using the GUI (Supabase Manager)
 
-This tool uses environment files located in the `envs/` folder to manage credentials.
+The GUI acts as a central control center for your backups.
 
-### 1. Create Config Files
+1. **Create a Project** : Click the **+ New** button. Enter your Project Name (e.g., "Production") and Connection URI.
+2. **Run a Backup** : Select your project from the dropdown and click **START BACKUP** .
+3. **Logs** : Real-time logs will appear in the terminal window at the bottom.
+4. **Settings** : Click the ⚙️ (Gear Icon) to configure retention rules (e.g., "Max 5 backups").
+5. **Edit Configs** : Select a project and click the **Edit** (Pencil Icon) to update passwords or URIs.
 
-Create a file for each project you want to backup. **Naming convention matters** : the name of the file becomes the prefix of your backup.
-
-- `envs/.production.env` → `production_backup_2024...zip`
-- `envs/.staging.env` → `staging_backup_2024...zip`
-
-### 2. File Content
-
-Inside each `.env` file, add your credentials:
-
-```
-# envs/.production.env
-
-# 1. Connection String (Recommended)
-SUPABASE_DB_URI=postgresql://postgres:[PASSWORD]@[HOST]:6543/postgres?pgbouncer=true
-
-# 2. Encryption Password
-ZIP_PASSWORD=YourStrongPasswordHere!
-```
-
-### 3. How to get your Connection String
-
-To ensure stability, use the **Transaction Pooler** connection string.
-
-1. Go to your Supabase Project Dashboard.
-2. Navigate to **Settings** > **Database** .
-3. Or use this direct link (replace `[YOUR-PROJECT-REF]` with your project ID):
-   > [https://supabase.com/dashboard/project/](https://supabase.com/dashboard/project/)[YOUR-PROJECT-REF]/settings/database?showConnect=true&method=transaction
-4. Copy the **URI** (Mode: Transaction) and paste it into `SUPABASE_DB_URI`.
+> **Note:** The GUI saves your configurations as `.env` files in the `envs/` folder and your preferences in `settings.json`.
 
 ---
 
-## 🖥️ Usage
+## 🤖 Automation & Headless Mode
 
-### Interactive Mode (Local)
+For scheduled tasks (Cron) or CI/CD pipelines, use the CLI engine.
 
-Simply run the script. It will scan your `envs/` folder and ask you which project to back up.
+### If using the Portable App:
+
+Use `backup_engine.exe` located in your extracted folder.
+
+**PowerShell**
+
+```
+# Run a backup for the 'production' environment (looks for .production.env)
+.\backup_engine.exe --env .production.env --non-interactive
+
+# Create a permanent backup that won't be deleted
+.\backup_engine.exe --env .production.env --non-interactive --permanent
+```
+
+### If running from Source (Python):
 
 **Bash**
 
 ```
-python backup.py
-```
-
-- **Select Project** : Choose from the detected `.env` files.
-- **Permanent Tag** : You can optionally mark a backup as "Permanent" to prevent the cleanup script from ever deleting it.
-
-### Headless Mode (Automation)
-
-For cron jobs or scripts, bypass the UI using arguments:
-
-**Bash**
-
-```
-# Syntax: python backup.py --env [FILENAME] --non-interactive [--permanent]
-
 python backup.py --env .production.env --non-interactive
 ```
 
 ---
 
-## 🤖 GitHub Actions Automation
+## 🔐 Configuration Details
 
-You can run this tool entirely in the cloud using GitHub Actions. The workflow will:
+### Connection String Guide
 
-1. Spin up a runner.
-2. Inject credentials from GitHub Secrets.
-3. Perform the backup.
-4. Commit the encrypted `.zip` file back to your repo (or you can modify it to upload to S3).
+To ensure stability during large backups, use the **Transaction Pooler** connection string.
 
-### 1. Set GitHub Secrets
+1. Go to your Supabase Project Dashboard.
+2. Navigate to **Settings** > **Database** .
+3. Copy the **URI** (Mode: Transaction) and paste it into the tool.
+   - _Format:_ `postgresql://postgres:[PASSWORD]@[HOST]:6543/postgres?pgbouncer=true`
 
-Go to your **Repository Settings** > **Secrets and variables** > **Actions** and add:
+### Environment Files
 
-- `PROD_DB_URI`: Connection string for production.
-- `STAGING_DB_URI`: Connection string for staging.
-- `ZIP_PASSWORD`: Password for encryption.
+The tool stores credentials in `envs/`. The file name determines the backup prefix.
 
-### 2. Add the Workflow
+- `envs/.production.env` → Backup file: `production_backup_2024...zip`
 
-Copy the content of `.github/workflows/backup.yml` provided in this repo. It runs daily at 02:00 UTC. By default, the schedule block is commented out. You must un-comment this to enable the automatic trigger.
+### Global Settings (`settings.json`)
+
+Managed via the GUI Settings menu, but can be edited manually:
+
+**JSON**
+
+```
+{
+    "max_backups": 5,       // Keep last 5 files per project
+    "retention_days": 30    // Delete files older than 30 days
+}
+```
 
 ---
 
-## 🧹 Retention Policy (`config.py`)
+## ☁️ GitHub Actions (Cloud Automation)
 
-To prevent your disk from filling up, the tool includes a `config.py` file where you can define rules:
+You can run this tool entirely in the cloud using GitHub Actions.
 
-**Python**
+1. **Set Secrets** in your Repo (Settings > Secrets > Actions):
+   - `PROD_DB_URI`
+   - `ZIP_PASSWORD`
+2. **Add the Workflow** : Uncomment the schedule block in `.github/workflows/backup.yml` to enable daily runs.
 
-```
-# config.py
-
-# Keep the last 5 backups per project
-MAX_BACKUPS_PER_PROJECT = 5
-
-# Delete backups older than 30 days
-RETENTION_DAYS = 30
-```
-
-> **Note:** Any backup marked as **Permanent** (suffix `_P.zip`) is **never** deleted, regardless of these settings.
+The workflow will spin up a runner, inject credentials, perform the backup, and commit the encrypted zip back to your repository.
 
 ---
 
 ## ♻️ Restoration Guide
 
-Since the backups are modular, you can choose to restore the entire database or just specific parts.
+Since backups are modular, you can restore the entire database or specific parts.
 
 1. **Unzip the Archive** :
    **Bash**
 
 ```
-   # You will need your ZIP_PASSWORD to extract this
    unzip production_backup_2024-01-01.zip -d restore_folder
+   # You will be prompted for your ZIP_PASSWORD
 ```
 
 1. **Run Restoration Commands** :
-   Use the [Supabase CLI](https://supabase.com/docs/guides/cli) to restore in the correct order:
+   Use the [Supabase CLI](https://supabase.com/docs/guides/cli) or `psql` to restore:
    **Bash**
 
 ```
@@ -200,12 +200,9 @@ Since the backups are modular, you can choose to restore the entire database or 
 
 ## 🔮 Roadmap
 
-We are actively working on:
-
 - [ ] **Cloud Storage Integration** : Direct upload to AWS S3, Cloudflare R2, or Google Cloud Storage.
-- [ ] **Notification Webhooks** : Slack/Discord alerts on backup success or failure.
-- [ ] **`restore.py` Helper** : An interactive script to automate the restoration commands above.
-- [ ] **Supabase Storage** : Backup logic for actual file assets (images/avatars) using Supabase API.
+- [ ] **Notification Webhooks** : Slack/Discord alerts on backup success/failure.
+- [ ] **One-Click Restore** : A `restore.exe` utility to automate the import process.
 
 ## 📝 License
 

@@ -30,3 +30,29 @@ Thumbs.db
 
 # GitHub Actions
 .github/workflows/*.secrets.enc
+
+# ---------------------------------
+# BUILD & RELEASE ARTIFACTS
+# ---------------------------------
+build/
+dist/
+*.spec
+*.exe
+*.zip
+
+# The generated portable folder from your build script
+SupabaseBackupTool/
+
+# ---------------------------------
+# VIRTUAL ENVIRONMENTS
+# ---------------------------------
+.venv/
+venv/
+env/
+build_env/
+
+# ---------------------------------
+# APP CONFIGURATION
+# ---------------------------------
+# User settings should not be tracked
+settings.json
