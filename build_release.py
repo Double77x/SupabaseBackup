@@ -17,12 +17,12 @@ def clean():
     for folder in ["build", "dist", DIST_FOLDER]:
         if os.path.exists(folder):
             shutil.rmtree(folder)
-    print("✨ Cleaned previous build artifacts.")
+    print("[*] Cleaned previous build artifacts.")
 
 
 def build_exe(script_name, exe_name, windowed=False):
     """Runs PyInstaller with your specific settings."""
-    print(f"🔨 Building {exe_name}...")
+    print(f"[*] Building {exe_name}...")
 
     args = [
         script_name,
@@ -43,7 +43,7 @@ def build_exe(script_name, exe_name, windowed=False):
 
 def create_distribution():
     """Assembles the final portable folder."""
-    print("📦 Assembling portable package...")
+    print("[*] Assembling portable package...")
 
     os.makedirs(DIST_FOLDER, exist_ok=True)
 
@@ -62,13 +62,13 @@ def create_distribution():
     os.makedirs(os.path.join(DIST_FOLDER, "envs"), exist_ok=True)
     os.makedirs(os.path.join(DIST_FOLDER, "backups"), exist_ok=True)
 
-    print(f"✅ Folder '{DIST_FOLDER}' created successfully.")
+    print(f"[+] Folder '{DIST_FOLDER}' created successfully.")
 
 
 def zip_package():
     """Zips the folder for easy distribution."""
     zip_filename = f"{DIST_FOLDER}.zip"
-    print(f"🤐 Zipping to {zip_filename}...")
+    print(f"[*] Zipping to {zip_filename}...")
 
     with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(DIST_FOLDER):
@@ -78,7 +78,7 @@ def zip_package():
                 arcname = os.path.relpath(file_path, os.path.dirname(DIST_FOLDER))
                 zipf.write(file_path, arcname)
 
-    print(f"🚀 Ready for release: {zip_filename}")
+    print(f"[+] Ready for release: {zip_filename}")
 
 
 if __name__ == "__main__":
