@@ -1,0 +1,109 @@
+name: Supabase Multi-Project Backup
+
+on:
+  schedule:
+  # -----------------------------------------------------------------
+  # AUTO-SCHEDULE (DISABLED BY DEFAULT)
+  # Uncomment the lines below to enable daily backups at 02:00 UTC
+  # -----------------------------------------------------------------
+  # schedule:
+  #   - cron: '0 2 * * *'
+
+  # Allow manual trigger from GitHub Actions tab (Always Enabled)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          # Using a modern stable version
+          python-version: "3.13.5"
+
+      - name: Install System Dependencies (PostgreSQL)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install Python Dependencies (via uv)
+        # Using 'uv' for faster dependency resolution
+        run: |
+          pip install uv
+          uv pip install --system -r requirements.txt
+          mkdir -p envs
+
+      # ---------------------------------------------------------------
+      # PROJECT 1: PRODUCTION
+      # ---------------------------------------------------------------
+      - name: Backup Production
+        run: |
+          # 1. Create ephemeral .env file from Secrets
+          # Note: We name it .production.env so the script outputs 'production_backup_...'
+          echo "SUPABASE_DB_URI=${{ secrets.PROD_DB_URI }}" > envs/.production.env
+          echo "ZIP_PASSWORD=${{ secrets.ZIP_PASSWORD }}" >> envs/.production.env
+
+          # 2. Run the backup script
+          python backup.py --env .production.env --non-interactive
+
+          # 3. Security: Remove the file immediately
+          rm envs/.production.env
+
+      # ---------------------------------------------------------------
+      # PROJECT 2: STAGING
+      # ---------------------------------------------------------------
+      - name: Backup Staging
+        if: always() # Ensures Staging runs even if Production fails
+        run: |
+          echo "SUPABASE_DB_URI=${{ secrets.STAGING_DB_URI }}" > envs/.staging.env
+          echo "ZIP_PASSWORD=${{ secrets.ZIP_PASSWORD }}" >> envs/.staging.env
+
+          python backup.py --env .staging.env --non-interactive
+
+          rm envs/.staging.env
+
+      # ---------------------------------------------------------------
+      # ADD NEW PROJECTS BELOW
+      # Copy the block above and change the secret name and .env filename.
+      # ---------------------------------------------------------------
+
+      # - name: Backup Client X
+      #   if: always()
+      #   run: |
+      #     echo "SUPABASE_DB_URI=${{ secrets.CLIENT_X_DB_URI }}" > envs/.client-x.env
+      #     echo "ZIP_PASSWORD=${{ secrets.ZIP_PASSWORD }}" >> envs/.client-x.env
+      #     python backup.py --env .client-x.env --non-interactive
+      #     rm envs/.client-x.env
+
+      # ---------------------------------------------------------------
+      # COMMIT RESULTS
+      # ---------------------------------------------------------------
+      - name: Commit and Push Backups
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "backup: automated multi-project snapshot [skip ci]"
+          file_pattern: "backups/*.zip"
+#########################################################################
+# SETUP INSTRUCTIONS
+#########################################################################
+# 1. Go to your GitHub Repo -> Settings -> Secrets and variables -> Actions
+# 2. Click "New repository secret" and add the following:
+#
+#    - PROD_DB_URI:    The full connection string for your Production DB.
+#                      (postgresql://postgres:pass@db.ref.supabase.co:5432/postgres)
+#
+#    - STAGING_DB_URI: The full connection string for your Staging DB.
+#
+#    - ZIP_PASSWORD:   The password used to encrypt the backup archives.
+#
+# 3. If adding a 3rd project, add a new Secret (e.g., CLIENT_X_DB_URI)
+#    and uncomment the "Backup Client X" block above.
+#########################################################################

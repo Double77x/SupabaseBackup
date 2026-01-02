@@ -2,109 +2,210 @@
 
 A simple and interactive command-line tool to back up your Supabase PostgreSQL databases.
 
+V2: This tool now goes beyond simple database dumps. It splits your backup into granular components (Roles, Schema, Data), encrypts them with AES-256, manages retention policies automatically, and supports headless execution for CI/CD pipelines.
+
 ![Demo](assets/readme_demo.png)
 
 ## Overview
 
-This tool provides a user-friendly interface to create backups of your Supabase projects. It's designed to be easy to use, especially when managing multiple projects, by allowing you to select the appropriate project configuration from `.env` files.
+## 🚀 Features
 
-The script uses `pg_dump` to create a `.sql` backup file of your database.
+- **Modular Architecture** : Splits backups into `roles.sql`, `schema.sql`, and `data.sql` for granular debugging and partial restoration.
+- **AES-256 Encryption** : Automatically compresses and encrypts backups into protected `.zip` archives.
+- **Multi-Project Support** : Seamlessly switch between Production, Staging, and Dev environments using config files.
+- **Automated Retention** : Built-in policy engine to clean up old backups while preserving "Permanent" tagged snapshots.
+- **Headless Mode** : Full CLI argument support for running in Cron jobs or GitHub Actions.
+- **Smart Naming** : Automatically detects project names from config files (e.g., `.production.env` -> `production_backup_...`).
 
-## Features
+---
 
-- **Interactive Interface**: A simple, menu-driven CLI for a smooth user experience.
-- **Multi-Project Support**: Easily switch between different Supabase projects by selecting the corresponding `.env` file.
-- **Dependency Check**: Automatically checks for and installs required Python packages.
-- **Cross-Platform**: Works on both Windows and Unix-like systems (macOS, Linux).
+## 🛠 Prerequisites
 
-## Prerequisites
+- **Python 3.9+** installed.
+- **PostgreSQL Client Tools** (`pg_dump` and `pg_dumpall`) must be in your system PATH.
+  - _Windows_ : Install [PostgreSQL](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) (Command Line Tools only).
+  - _macOS_ : `brew install libpq && brew link --force libpq`
+  - _Linux_ : `sudo apt-get install postgresql-client`
 
-Before you begin, ensure you have the following installed:
+---
 
-- **Python 3**: Make sure Python is installed and added to your system's PATH.
-- **PostgreSQL Client Tools**: The script relies on `pg_dump` to perform the backup. You must install the PostgreSQL command-line tools.
+## ⚙️ Installation & Setup
 
-### Installing PostgreSQL Client Tools
+1. **Clone the repository**
+   **Bash**
 
-#### Windows
-1.  Download the installer from the [PostgreSQL website](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads).
-2.  During installation, you only need to select the **"Command Line Tools"** component.
-3.  Add the `bin` directory of your PostgreSQL installation (e.g., `C:\Program Files\PostgreSQL\16\bin`) to your system's PATH environment variable.
-4.  Verify the installation by opening a new terminal and running `pg_dump --version`.
+   ```
+   git clone https://github.com/your-username/supabase-backup-tool.git
+   cd supabase-backup-tool
+   ```
 
-#### macOS (using Homebrew)
-```bash
-brew install libpq
-brew link --force libpq
+2. **Install Python Dependencies**
+   The script will verify and install dependencies on the first run, or you can do it manually:
+   **Bash**
+
+   ```
+   pip install -r requirements.txt
+   # OR using uv (recommended)
+   pip install uv
+   uv pip install -r requirements.txt
+   ```
+
+3. **Create the `envs` Directory**
+   This folder keeps your configuration files organized and ignored by Git.
+   **Bash**
+
+   ```
+   mkdir envs
+   ```
+
+---
+
+## 🔐 Configuration
+
+This tool uses environment files located in the `envs/` folder to manage credentials.
+
+### 1. Create Config Files
+
+Create a file for each project you want to backup. **Naming convention matters** : the name of the file becomes the prefix of your backup.
+
+- `envs/.production.env` → `production_backup_2024...zip`
+- `envs/.staging.env` → `staging_backup_2024...zip`
+
+### 2. File Content
+
+Inside each `.env` file, add your credentials:
+
+```
+# envs/.production.env
+
+# 1. Connection String (Recommended)
+SUPABASE_DB_URI=postgresql://postgres:[PASSWORD]@[HOST]:6543/postgres?pgbouncer=true
+
+# 2. Encryption Password
+ZIP_PASSWORD=YourStrongPasswordHere!
 ```
 
-#### Linux (Debian/Ubuntu)
-```bash
-sudo apt-get update
-sudo apt-get install postgresql-client
+### 3. How to get your Connection String
+
+To ensure stability, use the **Transaction Pooler** connection string.
+
+1. Go to your Supabase Project Dashboard.
+2. Navigate to **Settings** > **Database** .
+3. Or use this direct link (replace `[YOUR-PROJECT-REF]` with your project ID):
+   > [https://supabase.com/dashboard/project/](https://supabase.com/dashboard/project/)[YOUR-PROJECT-REF]/settings/database?showConnect=true&method=transaction
+4. Copy the **URI** (Mode: Transaction) and paste it into `SUPABASE_DB_URI`.
+
+---
+
+## 🖥️ Usage
+
+### Interactive Mode (Local)
+
+Simply run the script. It will scan your `envs/` folder and ask you which project to back up.
+
+**Bash**
+
 ```
-
-## Setup and Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <your-repository-url>
-    cd SupabaseBackup
-    ```
-
-2.  **Set up environment variables:**
-    This tool uses `.env` files to manage database credentials for different projects.
-
-    - Create a separate `.env` file for each Supabase project you want to back up (e.g., `.env.project-one`, `.env.project-two`).
-    - Copy the contents of `.env.example` into each of your new `.env` files.
-    - Fill in the required credentials for each project in its respective file.
-
-    ```bash
-    # Example: Create a .env for "project-alpha"
-    cp .env.example .env.project-alpha
-    ```
-    Then, edit `.env.project-alpha` with the correct credentials.
-
-## How It Works
-
-When you run the script, it will:
-1.  Display a welcome message with some ASCII art.
-2.  Ask if you have the required Python dependencies installed. If not, it will install them for you.
-3.  Scan the directory for all `.env.*` files and present them in an interactive list.
-4.  Prompt you to select which project (i.e., which `.env` file) you want to back up.
-5.  Load the environment variables from your selected file.
-6.  Construct and execute the `pg_dump` command to create the `backup.sql` file in a `backups` directory.
-
-## Usage
-
-To run the backup tool, simply run the following command in your terminal:
-
-```bash
 python backup.py
 ```
 
-The script will then guide you through the process of selecting the correct `.env` file for the project you wish to back up.
+- **Select Project** : Choose from the detected `.env` files.
+- **Permanent Tag** : You can optionally mark a backup as "Permanent" to prevent the cleanup script from ever deleting it.
 
-## Environment Variables
+### Headless Mode (Automation)
 
-Your `.env` files can be configured in one of two ways:
+For cron jobs or scripts, bypass the UI using arguments:
 
-#### Option 1: Using `SUPABASE_DB_URI` (Recommended)
-This is the simplest method. Provide the full database connection string.
-
-```
-SUPABASE_DB_URI=postgresql://postgres:[YOUR-PASSWORD]@[YOUR-HOST]:5432/postgres
-```
-
-#### Option 2: Using `SUPABASE_URL` and `DB_PASSWORD`
-If you don't have the full URI, you can provide the project URL and the database password separately.
+**Bash**
 
 ```
-SUPABASE_URL=https://your-project-ref.supabase.co
-DB_PASSWORD=your-database-password
+# Syntax: python backup.py --env [FILENAME] --non-interactive [--permanent]
+
+python backup.py --env .production.env --non-interactive
 ```
 
 ---
+
+## 🤖 GitHub Actions Automation
+
+You can run this tool entirely in the cloud using GitHub Actions. The workflow will:
+
+1. Spin up a runner.
+2. Inject credentials from GitHub Secrets.
+3. Perform the backup.
+4. Commit the encrypted `.zip` file back to your repo (or you can modify it to upload to S3).
+
+### 1. Set GitHub Secrets
+
+Go to your **Repository Settings** > **Secrets and variables** > **Actions** and add:
+
+- `PROD_DB_URI`: Connection string for production.
+- `STAGING_DB_URI`: Connection string for staging.
+- `ZIP_PASSWORD`: Password for encryption.
+
+### 2. Add the Workflow
+
+Copy the content of `.github/workflows/backup.yml` provided in this repo. It runs daily at 02:00 UTC. By default, the schedule block is commented out. You must un-comment this to enable the automatic trigger.
+
+---
+
+## 🧹 Retention Policy (`config.py`)
+
+To prevent your disk from filling up, the tool includes a `config.py` file where you can define rules:
+
+**Python**
+
+```
+# config.py
+
+# Keep the last 5 backups per project
+MAX_BACKUPS_PER_PROJECT = 5
+
+# Delete backups older than 30 days
+RETENTION_DAYS = 30
+```
+
+> **Note:** Any backup marked as **Permanent** (suffix `_P.zip`) is **never** deleted, regardless of these settings.
+
+---
+
+## ♻️ Restoration Guide
+
+Since the backups are modular, you can choose to restore the entire database or just specific parts.
+
+1. **Unzip the Archive** :
+   **Bash**
+
+```
+   # You will need your ZIP_PASSWORD to extract this
+   unzip production_backup_2024-01-01.zip -d restore_folder
+```
+
+1. **Run Restoration Commands** :
+   Use the [Supabase CLI](https://supabase.com/docs/guides/cli) to restore in the correct order:
+   **Bash**
+
+```
+   # 1. Restore Roles (Caution: Overwrites permissions)
+   supabase db execute --db-url "$SUPABASE_DB_URI" -f restore_folder/roles.sql
+
+   # 2. Restore Schema (Tables, Views, Functions)
+   supabase db execute --db-url "$SUPABASE_DB_URI" -f restore_folder/schema.sql
+
+   # 3. Restore Data (Rows)
+   supabase db execute --db-url "$SUPABASE_DB_URI" -f restore_folder/data.sql
+```
+
+---
+
+## 🔮 Roadmap
+
+We are actively working on:
+
+- [ ] **Cloud Storage Integration** : Direct upload to AWS S3, Cloudflare R2, or Google Cloud Storage.
+- [ ] **Notification Webhooks** : Slack/Discord alerts on backup success or failure.
+- [ ] **`restore.py` Helper** : An interactive script to automate the restoration commands above.
+- [ ] **Supabase Storage** : Backup logic for actual file assets (images/avatars) using Supabase API.
 
 ## 📝 License
 
