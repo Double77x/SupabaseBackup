@@ -21,7 +21,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "requirements.txt"
 
-      # 2. Install Python 3.11 via uv
+      # 2. Install Python 3.11 via uv.
       - name: Set up Python
         run: uv python install 3.13.5
 
