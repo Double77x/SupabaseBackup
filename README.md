@@ -1,4 +1,4 @@
-# Supabase Backup CLI
+# Supabase Backup - CLI & GUI
 
 This tool provides a secure, automated way to backup your Supabase PostgreSQL databases. It now offers two modes of operation:
 
@@ -10,6 +10,8 @@ This tool provides a secure, automated way to backup your Supabase PostgreSQL da
 ![Demo](assets/readme_demo.png)
 
 **PORTABLE GUI**
+
+![1767910751309](image/README/1767910751309.png)
 
 ## Overview
 

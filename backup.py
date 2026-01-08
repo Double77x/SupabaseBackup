@@ -1,38 +1,36 @@
 import argparse
 import glob
-import importlib.util
 import os
 import platform
 import shutil
 import socket
 import subprocess
+import sys
 import time
 from datetime import datetime
 from urllib.parse import urlparse
 
 import inquirer
+
+# [FIX] Move pyzipper to top-level import.
+# This ensures PyInstaller sees it and bundles it inside the exe.
+import pyzipper
 from dotenv import load_dotenv
 
 # Import user configuration
 import config
 
 
-def install_dependencies():
-    """Install dependencies from requirements.txt."""
-    try:
-        # We use standard pip here for user-friendliness on local machines,
-        # but the CI uses 'uv' explicitly in the workflow file.
-        subprocess.run(["pip", "install", "-r", "requirements.txt"], check=True)
-        print("Dependencies installed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error installing dependencies: {e}")
-        exit(1)
-
-
 def run_command(command, env, log_name):
     """Helper to run subprocess commands."""
     print(f"Generating {log_name}...")
     try:
+        # Check if the executable exists before running to avoid silent failures
+        exe_name = command[0]
+        if shutil.which(exe_name) is None:
+            print(f"❌ Error: Executable '{exe_name}' not found in PATH.")
+            return False
+
         subprocess.run(command, check=True, capture_output=True, text=True, env=env, timeout=1200)
         print(f"✔ {log_name} created.")
     except subprocess.TimeoutExpired:
@@ -42,13 +40,14 @@ def run_command(command, env, log_name):
         print(f"❌ Error generating {log_name}:")
         print(e.stderr)
         return False
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}")
+        return False
     return True
 
 
 def compress_and_encrypt(source_folder, output_zip, password):
     """Zips a folder with AES-256 encryption using pyzipper."""
-    import pyzipper
-
     print(f"\n📦 Compressing and Encrypting to {output_zip}...")
 
     try:
@@ -129,7 +128,6 @@ def main():
 
         # ASCII Art
         print("""
-
 ███████╗██╗   ██╗██████╗  █████╗ ██████╗  █████╗ ███████╗███████╗    ██████╗  █████╗  ██████╗██╗  ██╗██╗   ██╗██████╗ 
 ██╔════╝██║   ██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝    ██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██║   ██║██╔══██╗
 ███████╗██║   ██║██████╔╝███████║██████╔╝███████║███████╗█████╗      ██████╔╝███████║██║     █████╔╝ ██║   ██║██████╔╝
@@ -139,30 +137,26 @@ def main():
                                                                                                                         """)
         print("Welcome to the Supabase Backup Tool!")
 
-    # 1. Dependency Check
-    if importlib.util.find_spec("pyzipper") is None:
-        if args.non_interactive:
-            print("Installing dependencies for headless run...")
-            install_dependencies()
-        else:
-            questions = [
-                inquirer.Confirm("install", message="pyzipper is missing. Install dependencies?", default=True)
-            ]
-            ans = inquirer.prompt(questions)
-            if ans and ans.get("install"):
-                install_dependencies()
-            else:
-                print("pyzipper is required for encryption.")
-                exit(1)
+    # [FIX] REMOVED: Dependency install logic.
+    # PyInstaller guarantees imports exist if they are top-level.
+    # If pyzipper is missing, the exe would fail to start entirely (which is better than a silent crash).
 
     # 2. Select .env file from 'envs/' folder
-    env_dir = "envs"
+    # [FIX] Use sys.executable path to find 'envs' folder reliably in both dev and exe modes
+    if getattr(sys, "frozen", False):
+        base_app_dir = os.path.dirname(sys.executable)
+    else:
+        base_app_dir = os.path.dirname(os.path.abspath(__file__))
+
+    env_dir = os.path.join(base_app_dir, "envs")
+
     if not os.path.exists(env_dir):
         if args.non_interactive:
             os.makedirs(env_dir)
         else:
             print(f"Error: The '{env_dir}' folder is missing.")
-            print(f"Please create an '{env_dir}' folder and move your .env files there.")
+            print("Please create an 'envs' folder and move your .env files there.")
+            input("Press Enter to exit...")  # Pause so user can read error
             exit(1)
 
     selected_env_filename = None
@@ -178,7 +172,10 @@ def main():
         env_files = [f for f in os.listdir(env_dir) if f.endswith(".env")]
         if not env_files:
             print(f"Error: No .env files found in '{env_dir}/'.")
+            print("Please add a .env file to the envs folder.")
+            input("Press Enter to exit...")
             exit(1)
+
         questions = [inquirer.List("env_file", message="Select project config", choices=env_files)]
         answers = inquirer.prompt(questions)
         if not answers:
@@ -208,14 +205,13 @@ def main():
     # 3. Folder Setup
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     suffix = "_P" if is_permanent else ""
-
     folder_name = f"{project_prefix}_backup_{timestamp}{suffix}" if project_prefix else f"backup_{timestamp}{suffix}"
 
-    base_dir = "backups"
-    if not os.path.exists(base_dir):
-        os.makedirs(base_dir)
+    base_backups_dir = os.path.join(base_app_dir, "backups")
+    if not os.path.exists(base_backups_dir):
+        os.makedirs(base_backups_dir)
 
-    target_folder = os.path.join(base_dir, folder_name)
+    target_folder = os.path.join(base_backups_dir, folder_name)
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
 
@@ -240,6 +236,7 @@ def main():
             print(f"Connecting using URL/Pass from {selected_env_filename}...")
         if not supabase_url or not db_password:
             print("Error: Credentials missing in .env")
+            input("Press Enter to exit...")
             exit(1)
         try:
             parsed = urlparse(supabase_url)
@@ -247,14 +244,16 @@ def main():
                 raise ValueError("Invalid URL: Hostname not found.")
 
             host = f"db.{parsed.hostname.split('.')[0]}.supabase.co"
+            # Attempt generic DNS resolve
             try:
                 socket.gethostbyname(host)
             except socket.gaierror:
-                pass  # Proceed anyway in CI/Headless
+                pass
             common_args = ["-h", host, "-p", "5432", "-U", "postgres", "--no-password"]
             env["PGPASSWORD"] = db_password
         except Exception as e:
             print(f"Connection Error: {e}")
+            input("Press Enter to exit...")
             exit(1)
 
     # 5. Execute Dumps
@@ -286,7 +285,7 @@ def main():
     )
 
     # 6. Compression & Encryption
-    zip_filename = os.path.join(base_dir, f"{folder_name}.zip")
+    zip_filename = os.path.join(base_backups_dir, f"{folder_name}.zip")
 
     if not zip_password:
         print("\n⚠️  WARNING: ZIP_PASSWORD not found. Archive will NOT be encrypted.")
@@ -304,11 +303,21 @@ def main():
         print("❌ Encryption failed. Keeping raw folder for safety.")
 
     # 8. Run Retention Policy
-    cleanup_backups(base_dir, project_prefix)
+    cleanup_backups(base_backups_dir, project_prefix)
 
     print("\n---------------------------------")
     print("Process Finished.")
 
+    # [FIX] Keep window open if running manually so user can see result
+    if not args.non_interactive:
+        print("Closing in 5 seconds...")
+        time.sleep(5)
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        # [FIX] Catch-all to see what actually crashed
+        print(f"CRITICAL ERROR: {e}")
+        input("Press Enter to exit...")
