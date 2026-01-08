@@ -26,27 +26,27 @@ This tool provides a secure, automated way to backup your Supabase PostgreSQL da
 - **Permanent Snapshots** : Tag specific backups as "Permanent" to protect them from auto-deletion forever.
 - **Headless Mode** : Full CLI argument support for automation.
 
----
+## ⚠️ Critical Prerequisites
 
-## ⚠️ Critical Prerequisite: PostgreSQL Binaries
+Before using this tool, please ensure you meet the following requirements.
 
-Whether you use the GUI or the CLI, **this tool requires PostgreSQL Client Tools to be available.**
+### 1. PostgreSQL Binaries (Required for Backup)
 
-The tool uses `pg_dump` and `pg_dumpall` to perform the actual extraction. You have two options:
+Whether you use the GUI or the CLI, **this tool requires PostgreSQL Client Tools to be available** to perform the actual extraction.
 
-### Option A: Install Globally (Recommended)
+- **Option A: Install Globally (Recommended)**
+  - Download and install [PostgreSQL Command Line Tools for Windows](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads "null").
+- **Option B: Portable Mode**
+  - If you cannot install PostgreSQL globally, download the binaries zip, extract `pg_dump.exe` (and its DLL dependencies), and place them **inside the same folder** as `SupabaseManager.exe`.
 
-Install PostgreSQL on your machine. The tool will automatically find `pg_dump` in your system PATH.
+### 2. Encryption-Compatible Archiver (Required for Extraction)
 
-- **Windows** : Download and install [PostgreSQL Command Line Tools](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads).
-- **macOS** : `brew install libpq && brew link --force libpq`
-- **Linux** : `sudo apt-get install postgresql-client`
+This tool uses **AES-256** encryption to secure your backups.
+❌ **Windows File Explorer** (the default zip tool) **cannot** open AES-encrypted zip files. It will likely show an empty folder or throw an error.
 
-### Option B: Portable Mode
+✅ **You must use a compatible tool to extract your backups:**
 
-If you cannot install PostgreSQL globally, you can download the binaries zip, extract `pg_dump.exe` (and its DLL dependencies), and place them **inside the same folder** as `SupabaseManager.exe`.
-
----
+- [7-Zip](https://www.7-zip.org/ "null"), NanaZip, PeaZip
 
 ## 📥 Installation
 
@@ -59,30 +59,20 @@ If you cannot install PostgreSQL globally, you can download the binaries zip, ex
 
 ### Method 2: Running from Source (Developers)
 
-1. **Clone the repository** :
-   **Bash**
-
-```
-   git clone https://github.com/your-username/supabase-backup-tool.git
+1. **Clone the repository**:
+   ```
+   git clone [https://github.com/Double77x/supabase-backup-tool.git](https://github.com/your-username/supabase-backup-tool.git)
    cd supabase-backup-tool
-```
-
-1. **Install Dependencies** (Using `uv` is recommended for speed):
-   **Bash**
-
+   ```
+2. **Install Dependencies** (Using `uv` is recommended for speed):
    ```
    pip install uv
    uv pip install -r requirements.txt
    ```
-
-2. **Run the GUI** :
-   **Bash**
-
-```
+3. **Run the GUI**:
+   ```
    python gui.py
-```
-
----
+   ```
 
 ## 🖥️ Using the GUI (Supabase Manager)
 
@@ -96,8 +86,6 @@ The GUI acts as a central control center for your backups.
 
 > **Note:** The GUI saves your configurations as `.env` files in the `envs/` folder and your preferences in `settings.json`.
 
----
-
 ## 🤖 Automation & Headless Mode
 
 For scheduled tasks (Cron) or CI/CD pipelines, use the CLI engine.
@@ -105,8 +93,6 @@ For scheduled tasks (Cron) or CI/CD pipelines, use the CLI engine.
 ### If using the Portable App:
 
 Use `backup_engine.exe` located in your extracted folder.
-
-**PowerShell**
 
 ```
 # Run a backup for the 'production' environment (looks for .production.env)
@@ -118,13 +104,9 @@ Use `backup_engine.exe` located in your extracted folder.
 
 ### If running from Source (Python):
 
-**Bash**
-
 ```
 python backup.py --env .production.env --non-interactive
 ```
-
----
 
 ## 🔐 Configuration Details
 
@@ -147,16 +129,12 @@ The tool stores credentials in `envs/`. The file name determines the backup pref
 
 Managed via the GUI Settings menu, but can be edited manually:
 
-**JSON**
-
 ```
 {
-    "max_backups": 5,       // Keep last 5 files per project
-    "retention_days": 30    // Delete files older than 30 days
+    "max_backups": 5,        // Keep last 5 files per project
+    "retention_days": 30     // Delete files older than 30 days
 }
 ```
-
----
 
 ## ☁️ GitHub Actions (Cloud Automation)
 
@@ -169,23 +147,21 @@ You can run this tool entirely in the cloud using GitHub Actions.
 
 The workflow will spin up a runner, inject credentials, perform the backup, and commit the encrypted zip back to your repository.
 
----
-
 ## ♻️ Restoration Guide
 
 Since backups are modular, you can restore the entire database or specific parts.
 
 1. **Unzip the Archive** :
-   **Bash**
+   **Important:** Use 7-Zip or a similar tool (see Prerequisites) to handle the encryption.
 
 ```
-   unzip production_backup_2024-01-01.zip -d restore_folder
+   # Example using command line unzip (if installed) or 7z.exe
+   7z x production_backup_2024-01-01.zip -orestore_folder
    # You will be prompted for your ZIP_PASSWORD
 ```
 
 1. **Run Restoration Commands** :
-   Use the [Supabase CLI](https://supabase.com/docs/guides/cli) or `psql` to restore:
-   **Bash**
+   Use the [Supabase CLI](https://supabase.com/docs/guides/cli "null") or `psql` to restore:
 
 ```
    # 1. Restore Roles (Caution: Overwrites permissions)
@@ -197,8 +173,6 @@ Since backups are modular, you can restore the entire database or specific parts
    # 3. Restore Data (Rows)
    supabase db execute --db-url "$SUPABASE_DB_URI" -f restore_folder/data.sql
 ```
-
----
 
 ## 🔮 Roadmap
 
