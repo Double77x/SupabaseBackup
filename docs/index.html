@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Backup Manager</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <img src="logo.svg" alt="Supabase Backup Logo">
+                <div class="brand-text">
+                    <h1>Supabase Backup</h1>
+                    <p>Disaster Recovery Manager</p>
+                </div>
+            </div>
+            <a href="https://github.com/Double77x/SupabaseBackup" class="github-link" target="_blank">
+                View on GitHub
+            </a>
+        </header>
+
+        <main>
+            <section class="hero">
+                <h2>Secure Your Supabase Data</h2>
+                <p>A professional, reliable, and automated backup solution for your Supabase projects. Features a modern GUI and a powerful headless CLI for automation.</p>
+                <a href="https://github.com/Double77x/SupabaseBackup/releases" class="cta-button">Download Latest Release</a>
+                
+                <div class="screenshot">
+                    <img src="demo_gui.png" alt="Supabase Backup GUI Dashboard">
+                </div>
+                
+                <div class="screenshot">
+                    <img src="demo.png" alt="Supabase Backup CLI Demo">
+                </div>
+            </section>
+
+            <section class="features">
+                <div class="feature-card">
+                    <h3>Modern GUI Dashboard</h3>
+                    <p>Manage multiple projects, create configs, and view execution logs in a beautiful Catppuccin-themed interface.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Portable & Standalone</h3>
+                    <p>Runs as a standalone Windows executable (.exe). No Python installation required.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Secure Encryption</h3>
+                    <p>AES-256 encryption automatically secures your backups into protected .zip archives.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Automated Retention</h3>
+                    <p>Built-in policy engine cleans up old backups based on your settings (e.g., "Keep last 5 files").</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Headless CLI</h3>
+                    <p>Designed for automation. Easily integrate with Cron jobs or GitHub Actions using the command line engine.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Granular Recovery</h3>
+                    <p>Backups are split into roles, schema, and data, allowing for precise and flexible restoration.</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Made by Double77 🦁 &bull; Licensed under MIT</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -11,7 +11,7 @@ This tool provides a secure, automated way to backup your Supabase PostgreSQL da
 
 **PORTABLE GUI**
 
-![1767910751309](image/README/1767910751309.png)
+![1767910751309](assets/demo_gui.png "GUI Interface")
 
 ## Overview
 
